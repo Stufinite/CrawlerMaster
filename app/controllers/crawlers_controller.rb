@@ -3,7 +3,13 @@ class CrawlersController < ApplicationController
   before_filter :find_crawler, only: [:show, :setting, :run, :unschedule_job]
 
   def index
-    @crawler_list = CourseCrawler.crawler_list
+    available_crawler_names = CourseCrawler.crawler_list.map(&:to_s)
+
+    available_crawler_names.each do |crawler_name|
+      Crawler.find_or_create_by(name: crawler_name)
+    end
+
+    @crawlers = Crawler.where(name: available_crawler_names).order(:category)
   end
 
   def show

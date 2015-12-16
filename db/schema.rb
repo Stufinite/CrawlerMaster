@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20151215030747) do
+ActiveRecord::Schema.define(version: 20151216074806) do
 
   create_table "admin_users", force: :cascade do |t|
     t.string   "username",               default: ""
@@ -95,6 +95,7 @@ ActiveRecord::Schema.define(version: 20151215030747) do
     t.string   "data_name"
     t.boolean  "save_to_db",                   default: false
     t.boolean  "sync",                         default: false
+    t.string   "category"
   end
 
   create_table "rufus_jobs", force: :cascade do |t|
