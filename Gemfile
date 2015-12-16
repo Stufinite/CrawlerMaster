@@ -53,6 +53,8 @@ gem 'sidekiq', '~> 4.0'
 gem 'sidekiq-limit_fetch'
 gem 'redis-namespace'
 
+gem 'sinatra', :require => nil
+
 gem 'rufus-scheduler', '~> 3.1'
 
 # Use Unicorn as the app server

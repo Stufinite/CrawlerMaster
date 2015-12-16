@@ -18,6 +18,12 @@ Rails.application.routes.draw do
 
   get 'courses' => 'courses#index', as: :courses
 
+  # Sidekiq
+  require 'sidekiq/web'
+  authenticate :admin_user do
+    mount Sidekiq::Web => '/sidekiq'
+  end
+
   # Example of regular route:
   #   get 'products/:id' => 'catalog#view'
 
