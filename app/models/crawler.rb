@@ -18,25 +18,23 @@ class Crawler < ActiveRecord::Base
     self.organization_code.downcase
   end
 
-  def run_up(args={})
-    SCHEDULE_KEYS.map do |k|
-      time_str = self.schedule[k]
-      next if time_str.nil? || time_str.empty?
+  def run_up(job_type, args={})
+    time_str = self.schedule[job_type]
+    return nil if time_str.nil? || time_str.empty?
 
-      j = Rufus::Scheduler.s.send(:"schedule_#{k}", time_str) do
-        Sidekiq::Client.push(
-          'queue' => self.name,
-          'class' => CourseCrawler::Worker,
-          'args' => [
-            self.name,
-            args
-          ]
-        )
-      end
-      self.rufus_jobs.create(jid: j.id, type: k.to_s, original: j.original)
-
-      j
+    j = Rufus::Scheduler.s.send(:"schedule_#{job_type}", time_str) do
+      Sidekiq::Client.push(
+        'queue' => self.name,
+        'class' => CourseCrawler::Worker,
+        'args' => [
+          self.name,
+          args
+        ]
+      )
     end
+    self.rufus_jobs.create(jid: j.id, type: job_type.to_s, original: j.original)
+
+    j
   end
 
   private

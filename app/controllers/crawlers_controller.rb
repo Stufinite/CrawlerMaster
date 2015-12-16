@@ -29,7 +29,9 @@ class CrawlersController < ApplicationController
   end
 
   def run
-    jobs = @crawler.run_up(year: params[:year], term: params[:term])
+    jobs = Crawler::SCHEDULE_KEYS.map do |job_type|
+      @crawler.run_up(job_type, {year: params[:year], term: params[:term]})
+    end
 
     flash[:success] = "job_ids: #{jobs.map{|j| j && j.id}}"
 

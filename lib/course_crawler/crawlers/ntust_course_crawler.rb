@@ -141,6 +141,8 @@ module CourseCrawler::Crawlers
       retry_count = 3
       http_client.receive_timeout = 600
 
+      set_progress("Crawler Initialized")
+
       while retry_count > 0
         begin
 

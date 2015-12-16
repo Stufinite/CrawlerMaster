@@ -9,6 +9,7 @@
         th class
         th workers
         th queueing
+        th resource count
         th last_run_at
 
       - @crawler_list.each_with_index do |class_sym, index|
@@ -20,4 +21,5 @@
           td= link_to class_str, crawler_path(org)
           td= CourseCrawler::Crawlers.find_workers(class_str).count
           td= CourseCrawler::Crawlers.find_queued_jobs(class_str).count
+          td= crawler && crawler.courses.count
           td= (crawler && crawler.courses.last).nil? ? 'not available' : crawler.courses.last.updated_at

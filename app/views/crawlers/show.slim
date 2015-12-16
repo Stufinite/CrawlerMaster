@@ -22,6 +22,9 @@
       h4 Status
       table.table
         tr
+          th Name
+          td= @crawler.name
+        tr
           th Resource Url
           - resource_url = courses_path(organization_code: @crawler.organization_code)
           td= link_to resource_url, resource_url
@@ -31,6 +34,25 @@
         tr
           th Last Update at
           td= @crawler.courses.last.nil? ? 'not available' : @crawler.courses.last.updated_at
+        tr
+          th Queue size
+          td= "#{CourseCrawler::Crawlers.find_queued_jobs(@crawler.name).count}"
+        tr
+          th Workers Overview
+          td
+            .table-responsive
+              table.table.table-hover.table-bordered
+                tr
+                  th jid
+                  th progress
+                  th created_at
+                  th failed_at
+                - CourseCrawler::Crawlers.find_workers(@crawler.name).each do |process_id, thread_id, work|
+                  tr
+                    td= work["payload"]["jid"]
+                    td= CourseCrawler::Crawlers.get_progress(@crawler.name, work["payload"]["jid"])
+                    td= work["payload"]["created_at"] && Time.at(work["payload"]["created_at"])
+                    td= work["payload"]["failed_at"] && Time.at(work["payload"]["failed_at"])
 
       / Rufus Jobs Table
       h4 Rufus Jobs
