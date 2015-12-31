@@ -4,13 +4,13 @@
 # execution method.
 #
 # Example:
-#   CourseCrawler::Worker.perform_async "NtustCourseCrawler", { year: 2015, term: 2 }
+#   CourseCrawler::CourseWorker.perform_async "NtustCourseCrawler", { year: 2015, term: 2 }
 #
 # The class CourseCrawler::Crawler::NtustCourseCrawler will be loaded and create an instance
 # then call default method "courses".
 
 module CourseCrawler
-  class Worker
+  class CourseWorker
     include Sidekiq::Worker
     sidekiq_options :retry => 1
 
@@ -20,10 +20,13 @@ module CourseCrawler
       org = args[0].match(/(.+?)CourseCrawler/)[1].upcase
       crawler_model = Crawler.find_by(organization_code: org)
 
+      year = args[1][:year] || crawler_model.year || (Time.now.month.between?(1, 7) ? Time.now.year - 1 : Time.now.year)
+      term = args[1][:term] || crawler_model.term || (Time.now.month.between?(2, 7) ? 2 : 1)
+
       @klass_instance =
         klass.new(
-          year: args[1][:year],
-          term: args[1][:term],
+          year: year,
+          term: term,
           update_progress: args[1][:update_progress],
           after_each: args[1][:after_each]
         )
@@ -52,40 +55,43 @@ module CourseCrawler
         }, '#{Time.now}', '#{Time.now}' )"
       end
 
-      sql = <<-eof
-        INSERT INTO courses (#{inserted_column_names.join(', ')})
-        VALUES #{courses_inserts.join(', ')}
-      eof
+      sqls = courses_inserts.in_groups_of(500, false).map { |cis|
+        <<-eof
+          INSERT INTO courses (#{inserted_column_names.join(', ')})
+          VALUES #{cis.join(', ')}
+        eof
+      }
+
+      # sql = <<-eof
+      #   INSERT INTO courses (#{inserted_column_names.join(', ')})
+      #   VALUES #{courses_inserts.join(', ')}
+      # eof
 
       if crawler_model.save_to_db
         ActiveRecord::Base.transaction {
-          Course.where(organization_code: org).destroy_all
-          ActiveRecord::Base.connection.execute(sql)
+          Course.where(organization_code: org, year: year, term: term).destroy_all
+          sqls.map{|sql| ActiveRecord::Base.connection.execute(sql) }
 
           Rails.logger.info("#{args[0]}: Succesfully save to database.")
         }
       end
 
       ## Sync to Core
-      # get crawler settings
-      api_put_columns = (Course.inserted_column_names + [ :created_at, :updated_at ])
-
-      http_client = HTTPClient.new
-
-      courses = Course.where(organization_code: org)
-      courses_count = courses.count
-
       if crawler_model.sync
-        courses.find_in_batches(batch_size: 200) do |courses|
-          courses.map{|c| Hash[c.attributes.map{|k, v| [k.to_sym, v]}].slice(*api_put_columns) }.each_with_index do |course, index|
+        j = Rufus::Scheduler.s.send(:"schedule_in", '1s') do
+          Sidekiq::Client.push(
+            'queue' => "CourseCrawler::CourseSyncWorker",
+            'class' => CourseCrawler::CourseSyncWorker,
+            'args' => [
+              org:        org,
+              year:       year,
+              term:       term,
+              class_name: @klass_instance.class.to_s
+            ]
+          )
+        end
+        crawler_model.rufus_jobs.create(jid: j.id, type: 'in', original: j.original)
 
-            http_client.put("#{crawler_model.data_management_api_endpoint}/#{course[:code]}?key=#{crawler_model.data_management_api_key}",
-              { crawler_model.data_name => course }
-            )
-
-            @klass_instance.set_progress("syncing: #{index+1} / #{courses_count}")
-          end # end courses.each_with_index
-        end # end courses.find_in_batches
       end # end if crwaler_model.sync
 
     end
