@@ -1,3 +1,6 @@
+# 國立臺灣大學
+# 課程查詢網址：https://nol.ntu.edu.tw/nol/coursesearch/search_result.php
+
 module CourseCrawler::Crawlers
   class NtuCourseCrawler < CourseCrawler::Base
 
@@ -14,21 +17,21 @@ module CourseCrawler::Crawlers
     }
 
     PERIODS = {
-      "0" => 1,
-      "1" => 2,
-      "2" => 3,
-      "3" => 4,
-      "4" => 5,
-      "5" => 6,
-      "6" => 7,
-      "7" => 8,
-      "8" => 9,
-      "9" => 10,
+      "0"  => 1,
+      "1"  => 2,
+      "2"  => 3,
+      "3"  => 4,
+      "4"  => 5,
+      "5"  => 6,
+      "6"  => 7,
+      "7"  => 8,
+      "8"  => 9,
+      "9"  => 10,
       "10" => 11,
-      "A" => 12,
-      "B" => 13,
-      "C" => 14,
-      "D" => 15
+      "A"  => 12,
+      "B"  => 13,
+      "C"  => 14,
+      "D"  => 15
     }
 
     def initialize year: current_year, term: current_term, update_progress: nil, after_each: nil, params: nil
