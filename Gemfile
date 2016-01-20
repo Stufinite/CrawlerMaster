@@ -57,6 +57,7 @@ gem 'spreadsheet'
 gem 'rtesseract', :require => false
 gem 'rmagick', :require => false
 gem 'selenium-webdriver'
+gem "capybara-webkit"
 
 gem 'sidekiq', '~> 4.0'
 gem 'sidekiq-limit_fetch'
